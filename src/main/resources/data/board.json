@@ -1,0 +1,6 @@
+{
+  "id": "00000",
+  "self": "https://jira.example.com/rest/agile/1.0/board/00000",
+  "name": "Sample jira board",
+  "type": "kanban"
+}

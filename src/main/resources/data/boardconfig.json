@@ -1,0 +1,73 @@
+{
+  "id": "00000",
+  "name": "Sample jira board",
+  "type": "kanban",
+  "self": "https://jira.example.com/rest/agile/1.0./board/00000/configuration",
+  "filter": {
+    "id": "000000",
+    "self": "https://jira.example.com/rest/api/2/filter/000000"
+  },
+  "subQuery": {
+    "query": "fixVersion in unreleasedVersions() OR fixVersion is EMPTY"
+  },
+  "columnConfig": {
+    "columns": [
+      {
+        "name": "Backlog",
+        "statuses": [
+          {
+            "id": 10001,
+            "self": "http://jira.example.com/rest/api/2/status/10001"
+          },
+          {
+            "id": 10002,
+            "self": "http://jira.example.com/rest/api/2/status/10002"
+          }
+        ]
+      },
+      {
+        "name": "To Do",
+        "statuses": [
+          {
+            "id": 10003,
+            "self": "http://jira.example.com/rest/api/2/status/10003"
+          },
+          {
+            "id": 10004,
+            "self": "http://jira.example.com/rest/api/2/status/10004"
+          }
+        ]
+      },
+      {
+        "name": "In Progress",
+        "statuses": [
+          {
+            "id": 10005,
+            "self": "http://jira.example.com/rest/api/2/status/10005"
+          },
+          {
+            "id": 10006,
+            "self": "http://jira.example.com/rest/api/2/status/10006"
+          }
+        ]
+      },
+      {
+        "name": "Done",
+        "statuses": [
+          {
+            "id": 10007,
+            "self": "http://jira.example.com/rest/api/2/status/10007"
+          },
+          {
+            "id": 10008,
+            "self": "http://jira.example.com/rest/api/2/status/10008"
+          }
+        ]
+      }
+    ],
+    "constraintType": "issueCount"
+  },
+  "ranking": {
+    "rankingFieldId": "00000"
+  }
+}
