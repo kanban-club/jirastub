@@ -9,18 +9,17 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpCookie;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import java.awt.*;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 
 @SpringBootApplication
 @RestController
@@ -33,6 +32,9 @@ public class JiraStubApplication {
     private final String FILE_BOARD_CONFIGURATION = "boardconfig.json";
     private final String FILE_BOARD_ISSUES = "issueset.json";
     private final static String DEFAULT_MAX_RESULTS = "50";
+
+    @Value("${server.port:8080}")
+    String serverPort;
 
     @Value("${profiles}")
     private String[] profiles;
@@ -85,6 +87,14 @@ public class JiraStubApplication {
         } catch (Exception e) {
             logger.error("ERROR: no issues loaded for profile '{}'", profile);
         }
+
+        logger.info("USAGE http://localhost:{}/rest/agile/latest/board/00000/issue", serverPort);
+    }
+
+    @PostMapping("/login.jsp")
+    public ResponseEntity<String> login() {
+        HttpCookie cookie = ResponseCookie.from("JSESSIONID", UUID.randomUUID().toString()).build();
+        return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cookie.toString()).body("");
     }
 
     public static LinkedHashMap getJSONObjectFromResource(String file) throws IOException {
@@ -104,6 +114,13 @@ public class JiraStubApplication {
     public String getBoardConfiguration(@PathVariable("boardId") long boardId) throws JsonProcessingException {
         LinkedHashMap boardConfiguration = boardConfigurations.get(boardId);
         return boardConfiguration != null ? (new ObjectMapper()).writeValueAsString(boardConfiguration) : ERROR_MESSAGE_BOARD;
+    }
+
+    @GetMapping(API_PREFIX + "/issue/{issueId}")
+    public String getIssue(@PathVariable("issueId") long issueId) throws JsonProcessingException {
+        List issue = boardIssues.get(issueId);
+        return issue != null ? (new ObjectMapper()).writeValueAsString(issue.stream().findAny().orElseThrow()) : ERROR_MESSAGE_BOARD;
+//        return "asca";
     }
 
     @GetMapping(API_PREFIX + "/board/{boardId}/issue")
