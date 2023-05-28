@@ -116,12 +116,11 @@ public class JiraStubApplication {
         return boardConfiguration != null ? (new ObjectMapper()).writeValueAsString(boardConfiguration) : ERROR_MESSAGE_BOARD;
     }
 
-    @GetMapping(API_PREFIX + "/issue/{issueId}")
+/*    @GetMapping(API_PREFIX + "/issue/{issueId}")
     public String getIssue(@PathVariable("issueId") long issueId) throws JsonProcessingException {
         List issue = boardIssues.get(issueId);
         return issue != null ? (new ObjectMapper()).writeValueAsString(issue.stream().findAny().orElseThrow()) : ERROR_MESSAGE_BOARD;
-//        return "asca";
-    }
+    }*/
 
     @GetMapping(API_PREFIX + "/board/{boardId}/issue")
     public String getAllIssues(@PathVariable("boardId") long boardId, @RequestParam(name = "startAt", defaultValue = "0") long startAt, @RequestParam(name = "maxResults", defaultValue = DEFAULT_MAX_RESULTS) long maxResults) throws JsonProcessingException {
