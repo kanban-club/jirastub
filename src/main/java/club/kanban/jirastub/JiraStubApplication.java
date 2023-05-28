@@ -88,7 +88,7 @@ public class JiraStubApplication {
             logger.error("ERROR: no issues loaded for profile '{}'", profile);
         }
 
-        logger.info("USAGE http://localhost:{}/rest/agile/latest/board/00000/issue", serverPort);
+        logger.info("USAGE https://localhost:{}/rest/agile/latest/board/1/issue", serverPort);
     }
 
     @PostMapping("/login.jsp")
