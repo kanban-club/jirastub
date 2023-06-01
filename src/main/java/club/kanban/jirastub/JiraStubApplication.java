@@ -9,22 +9,18 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.http.HttpCookie;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseCookie;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
 import java.awt.*;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 
 @SpringBootApplication
 @RestController
 public class JiraStubApplication {
-
     private final static String API_PREFIX = "/rest/agile/{apiVersion}";
     private final String ERROR_MESSAGE_ISSUE = "{\"errorMessages\":[\"The issue no longer exists.\"],\"errors\":{}}";
     private final String ERROR_MESSAGE_BOARD = "{\"errorMessages\":[],\"errors\":{\"rapidViewId\":\"The requested board cannot be viewed because it either does not exist or you do not have permission to view it.\"}}";
@@ -34,7 +30,10 @@ public class JiraStubApplication {
     private final static String DEFAULT_MAX_RESULTS = "50";
 
     @Value("${server.port:8080}")
-    String serverPort;
+    private String serverPort;
+
+    @Value("${server.ssl.key-store:}")
+    private String keyStore;
 
     @Value("${profiles}")
     private String[] profiles;
@@ -88,13 +87,47 @@ public class JiraStubApplication {
             logger.error("ERROR: no issues loaded for profile '{}'", profile);
         }
 
-        logger.info("USAGE https://localhost:{}/rest/agile/latest/board/1/issue", serverPort);
+        String scheme = (keyStore != null && !keyStore.isBlank()) ? "https" : "http";
+        logger.info("USAGE {}://localhost:{}/rest/agile/latest/board/1/issue", scheme, serverPort);
     }
 
-    @PostMapping("/login.jsp")
-    public ResponseEntity<String> login() {
-        HttpCookie cookie = ResponseCookie.from("JSESSIONID", UUID.randomUUID().toString()).build();
-        return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cookie.toString()).body("");
+    @PostMapping("/rest/auth/1/session")
+    public ResponseEntity<String> login(@RequestBody String json) {
+        ResponseEntity<String> response;
+
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            Map<String, String> parsedJson = mapper.readValue(json, new TypeReference<Map<String, String>>() {});
+            String username = Objects.requireNonNull(parsedJson.get("username"));
+            String password = Objects.requireNonNull(parsedJson.get("password"));
+
+            logger.info("Запрос на авторизацию пользователя: {}", username);
+            if (!(username.equalsIgnoreCase("username") && password.equals("password"))) {
+                throw new RuntimeException("Unauthorized");
+            }
+            String sessionId = UUID.randomUUID().toString();
+            HttpCookie cookie = ResponseCookie.from("JSESSIONID", sessionId).build();
+            response = ResponseEntity
+                    .ok()
+                    .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                    .body(String.format("{ \"session\": {\"name\": \"JSESSIONID\", \"value\": \"%s\"}}", sessionId));
+
+            logger.info("Отправлен JSESSIONID: {}", sessionId);
+        } catch (NullPointerException | JsonProcessingException e) {
+            logger.info("Неверный формат запроса на авторизацию");
+            response = ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            logger.info("Неверное имя пользователя или пароль");
+            response = new ResponseEntity<String>(e.getMessage(), HttpStatus.UNAUTHORIZED);
+        }
+
+        return response;
+    }
+    @DeleteMapping("/rest/auth/1/session")
+    public ResponseEntity<String> logout(@CookieValue("JSESSIONID") String sessionId) {
+        ResponseEntity<String> response = ResponseEntity.noContent().build();
+        logger.info("Сессия {} закрыта", sessionId);
+        return response;
     }
 
     public static LinkedHashMap getJSONObjectFromResource(String file) throws IOException {
@@ -123,7 +156,11 @@ public class JiraStubApplication {
     }*/
 
     @GetMapping(API_PREFIX + "/board/{boardId}/issue")
-    public String getAllIssues(@PathVariable("boardId") long boardId, @RequestParam(name = "startAt", defaultValue = "0") long startAt, @RequestParam(name = "maxResults", defaultValue = DEFAULT_MAX_RESULTS) long maxResults) throws JsonProcessingException {
+    public String getAllIssues(@PathVariable("boardId") long boardId,
+                               @RequestParam(name = "startAt", defaultValue = "0") long startAt,
+                               @RequestParam(name = "maxResults", defaultValue = DEFAULT_MAX_RESULTS) long maxResults
+    ) throws JsonProcessingException {
+
         long start = startAt >= 0 ? startAt : 0;
         long stop = start + maxResults;
 
@@ -148,7 +185,7 @@ public class JiraStubApplication {
             issueSet.put("issues", subList);
             return (new ObjectMapper()).writeValueAsString(issueSet);
         } else {
-            return String.format("The board '%d' not found", boardId);
+            return String.format("The board '%d' is not found", boardId);
         }
     }
 }
